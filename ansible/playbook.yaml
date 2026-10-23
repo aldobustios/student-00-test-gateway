@@ -6,9 +6,9 @@
 
   vars:
     apic_endpoint: "https://apic-lab-mgmt-platform-api-apic.apps.itz-jyz46m.infra01-lb.wdc07.techzone.ibm.com"
-    gateway_name: "${{ values.gateway_name }}"
-    namespace: "${{ values.namespace }}"
-    environment: "${{ values.environment }}"
+    gateway_name: "test-gateway"
+    namespace: "student-00"
+    environment: "dev"
 
   tasks:
     - name: Wait for gateway to be ready
@@ -50,9 +50,9 @@
         body_format: json
         body:
           enabled: true
-          profile: "{{ environment }}-tls-profile"
+          profile: "dev-tls-profile"
         status_code: 200
 
     - name: Print gateway info
       debug:
-        msg: "Gateway {{ gateway_name }} configured successfully in {{ environment }}"
+        msg: "Gateway test-gateway configured successfully in dev"
