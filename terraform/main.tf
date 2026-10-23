@@ -1,35 +1,55 @@
 terraform {
   required_providers {
-    ibm = {
-      source  = "IBM-Cloud/ibm"
-      version = "~> 1.65"
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.25"
     }
   }
 }
 
-provider "ibm" {
-  ibmcloud_api_key = var.ibmcloud_api_key
+provider "kubernetes" {
+  host                   = var.k8s_host
+  token                  = var.k8s_token
+  cluster_ca_certificate = base64decode(var.k8s_ca_cert)
 }
 
-resource "ibm_apic_gateway" "nano" {
-  name        = "test-gateway"
-  namespace   = "student-00"
-  environment = "dev"
-  replicas    = 1
-
-  gateway_type = "datapower-api-gateway"
-
-  apic_cluster = var.apic_cluster_endpoint
-
-  lifecycle {
-    ignore_changes = [name]
+resource "kubernetes_manifest" "gateway" {
+  manifest = {
+    apiVersion = "datapower.ibm.com/v1beta3"
+    kind       = "DataPowerService"
+    metadata = {
+      name      = var.gateway_name
+      namespace = var.namespace
+      labels = {
+        app         = var.gateway_name
+        environment = var.environment
+        owner       = var.namespace
+      }
+    }
+    spec = {
+      replicas = var.replicas
+      version  = "10.5.0.10"
+      license = {
+        accept     = true
+        use        = "nonproduction"
+        license    = "L-ACRR-ZTMKXU"
+      }
+      users = [{
+        name              = "admin"
+        accessLevel       = "privileged"
+        passwordSecret    = "datapower-admin-credentials"
+      }]
+      gateway = {
+        enabled = true
+      }
+    }
   }
 }
 
-output "gateway_endpoint" {
-  value = ibm_apic_gateway.nano.endpoint_url
+output "gateway_name" {
+  value = var.gateway_name
 }
 
-output "gateway_name" {
-  value = ibm_apic_gateway.nano.name
+output "gateway_namespace" {
+  value = var.namespace
 }
