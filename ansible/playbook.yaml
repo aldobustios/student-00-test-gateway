@@ -35,6 +35,28 @@
       set_fact:
         apic_token: "{{ token_response.json.access_token }}"
 
+    - name: Delete existing Draft Product if exists
+      uri:
+        url: "{{ apic_manager_endpoint }}/api/orgs/{{ apic_org_name }}/drafts/draft-products/{{ api_name }}-product/1.0.0"
+        method: DELETE
+        validate_certs: false
+        headers:
+          Authorization: "Bearer {{ apic_token }}"
+          Accept: "application/json"
+        status_code: [200, 404]
+      ignore_errors: true
+
+    - name: Delete existing Draft API if exists
+      uri:
+        url: "{{ apic_manager_endpoint }}/api/orgs/{{ apic_org_name }}/drafts/draft-apis/{{ api_name }}/1.0.0"
+        method: DELETE
+        validate_certs: false
+        headers:
+          Authorization: "Bearer {{ apic_token }}"
+          Accept: "application/json"
+        status_code: [200, 404]
+      ignore_errors: true
+
     - name: Create Draft API
       uri:
         url: "{{ apic_manager_endpoint }}/api/orgs/{{ apic_org_name }}/drafts/draft-apis"
