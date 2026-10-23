@@ -103,20 +103,24 @@
       debug:
         msg: "Draft API created: {{ draft_api_response.json.id }}"
 
-    - name: Get catalog ID
+    - name: Get all catalogs
       uri:
-        url: "{{ apic_platform_endpoint }}/api/orgs/{{ apic_org_id }}/catalogs/{{ catalog_name }}"
+        url: "{{ apic_platform_endpoint }}/api/orgs/{{ apic_org_id }}/catalogs"
         method: GET
         validate_certs: false
         headers:
           Authorization: "Bearer {{ apic_token }}"
           Accept: "application/json"
         status_code: 200
-      register: catalog_response
+      register: catalogs_response
 
     - name: Set catalog ID fact
       set_fact:
-        catalog_id: "{{ catalog_response.json.id }}"
+        catalog_id: "{{ (catalogs_response.json.results | selectattr('name', 'equalto', catalog_name) | first).id }}"
+
+    - name: Print catalog ID
+      debug:
+        msg: "Catalog ID: {{ catalog_id }}"
 
     - name: Create Draft Product
       uri:
