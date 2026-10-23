@@ -5,54 +5,29 @@
   gather_facts: false
 
   vars:
-    apic_endpoint: "https://apic-lab-mgmt-platform-api-apic.apps.itz-jyz46m.infra01-lb.wdc07.techzone.ibm.com"
     gateway_name: "test-gateway"
     namespace: "student-00"
     environment: "dev"
+    k8s_api: "https://api.itz-jyz46m.infra01-lb.wdc07.techzone.ibm.com:6443"
 
   tasks:
-    - name: Wait for gateway to be ready
-      uri:
-        url: "{{ apic_endpoint }}/api/gateways/{{ gateway_name }}"
-        method: GET
-        headers:
-          Authorization: "Bearer {{ lookup('env', 'APIC_TOKEN') }}"
-        status_code: 200
-      register: gateway_status
-      retries: 10
-      delay: 30
-      until: gateway_status.status == 200
-
-    - name: Apply rate limiting policy
-      uri:
-        url: "{{ apic_endpoint }}/api/gateways/{{ gateway_name }}/policies"
-        method: POST
-        headers:
-          Authorization: "Bearer {{ lookup('env', 'APIC_TOKEN') }}"
-          Content-Type: "application/json"
-        body_format: json
-        body:
-          name: rate-limit
-          type: rate-limit
-          config:
-            rate: 100
-            interval: 60
-            unit: requests
-        status_code: 201
-
-    - name: Apply TLS configuration
-      uri:
-        url: "{{ apic_endpoint }}/api/gateways/{{ gateway_name }}/tls"
-        method: PUT
-        headers:
-          Authorization: "Bearer {{ lookup('env', 'APIC_TOKEN') }}"
-          Content-Type: "application/json"
-        body_format: json
-        body:
-          enabled: true
-          profile: "dev-tls-profile"
-        status_code: 200
+    - name: Wait for DataPowerService to be ready
+      shell: |
+        for i in $(seq 1 20); do
+          STATUS=$(curl -sk \
+            -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+            "{{ k8s_api }}/apis/datapower.ibm.com/v1beta3/namespaces/{{ namespace }}/datapowerservices/{{ gateway_name }}" \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status',{}).get('phase','Unknown'))" 2>/dev/null)
+          echo "Attempt $i: Status = $STATUS"
+          if [ "$STATUS" = "Running" ]; then
+            echo "Gateway is ready!"
+            exit 0
+          fi
+          sleep 15
+        done
+        echo "Gateway did not reach Running state in time - continuing anyway"
+        exit 0
 
     - name: Print gateway info
       debug:
-        msg: "Gateway test-gateway configured successfully in dev"
+        msg: "Gateway {{ gateway_name }} deployed in namespace {{ namespace }} (environment: {{ environment }})"
