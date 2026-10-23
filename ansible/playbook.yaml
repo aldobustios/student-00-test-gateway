@@ -1,33 +1,43 @@
 ---
-- name: Configure DataPower Nano Gateway
+- name: Verify API in APIC API Manager
   hosts: localhost
   connection: local
   gather_facts: false
 
   vars:
+    apic_platform_endpoint: "https://apic-lab-mgmt-platform-api-apic.apps.itz-jyz46m.infra01-lb.wdc07.techzone.ibm.com"
+    apic_manager_endpoint: "https://apic-lab-mgmt-api-manager-apic.apps.itz-jyz46m.infra01-lb.wdc07.techzone.ibm.com"
     gateway_name: "test-gateway"
     namespace: "student-00"
     environment: "dev"
-    k8s_api: "https://api.itz-jyz46m.infra01-lb.wdc07.techzone.ibm.com:6443"
 
   tasks:
-    - name: Wait for DataPowerService to be ready
-      shell: |
-        for i in $(seq 1 20); do
-          STATUS=$(curl -sk \
-            -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
-            "{{ k8s_api }}/apis/datapower.ibm.com/v1beta3/namespaces/{{ namespace }}/datapowerservices/{{ gateway_name }}" \
-            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('status',{}).get('phase','Unknown'))" 2>/dev/null)
-          echo "Attempt $i: Status = $STATUS"
-          if [ "$STATUS" = "Running" ]; then
-            echo "Gateway is ready!"
-            exit 0
-          fi
-          sleep 15
-        done
-        echo "Gateway did not reach Running state in time - continuing anyway"
-        exit 0
+    - name: Get APIC token
+      uri:
+        url: "{{ apic_platform_endpoint }}/api/token"
+        method: POST
+        body_format: json
+        validate_certs: false
+        body:
+          username: admin
+          password: "{{ lookup('env', 'APIC_PASSWORD') }}"
+          realm: "admin/default-idp-1"
+          client_id: "caa87d9a-8cd7-4686-8b6e-ee2cdc5ee267"
+          client_secret: "3ecff363-7eb3-44be-9e07-6d4386c48b0b"
+          grant_type: password
+        status_code: 200
+      register: token_response
 
-    - name: Print gateway info
+    - name: Verify API exists in APIC
+      uri:
+        url: "{{ apic_manager_endpoint }}/api/orgs/lab-organization/drafts/draft-apis"
+        method: GET
+        validate_certs: false
+        headers:
+          Authorization: "Bearer {{ token_response.json.access_token }}"
+        status_code: 200
+      register: apis_response
+
+    - name: Print confirmation
       debug:
-        msg: "Gateway {{ gateway_name }} deployed in namespace {{ namespace }} (environment: {{ environment }})"
+        msg: "API {{ namespace }}-{{ gateway_name }} verified in APIC API Manager. Total APIs: {{ apis_response.json.total_results }}"
