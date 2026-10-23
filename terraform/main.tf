@@ -20,12 +20,15 @@ resource "null_resource" "apic_catalog" {
     command = <<EOT
 set -e
 
+echo "Using username: $TF_VAR_apic_username"
+echo "Password length: $(echo -n "$TF_VAR_apic_password" | wc -c)"
+
 TOKEN_RESPONSE=$(curl -sk -X POST \
   "${var.apic_platform_endpoint}/api/token" \
   -H "Content-Type: application/json" \
   -d "{
-    \"username\": \"${var.apic_username}\",
-    \"password\": \"${var.apic_password}\",
+    \"username\": \"$TF_VAR_apic_username\",
+    \"password\": \"$TF_VAR_apic_password\",
     \"realm\": \"provider/default-idp-2\",
     \"client_id\": \"caa87d9a-8cd7-4686-8b6e-ee2cdc5ee267\",
     \"client_secret\": \"3ecff363-7eb3-44be-9e07-6d4386c48b0b\",
