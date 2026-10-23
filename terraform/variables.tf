@@ -1,41 +1,47 @@
-variable "k8s_host" {
-  description = "Kubernetes API server URL"
+variable "apic_platform_endpoint" {
+  description = "APIC Platform API endpoint"
   type        = string
-  default     = "https://api.itz-jyz46m.infra01-lb.wdc07.techzone.ibm.com:6443"
+  default     = "https://apic-lab-mgmt-platform-api-apic.apps.itz-jyz46m.infra01-lb.wdc07.techzone.ibm.com"
 }
 
-variable "k8s_token" {
-  description = "Kubernetes service account token"
+variable "apic_manager_endpoint" {
+  description = "APIC API Manager endpoint"
+  type        = string
+  default     = "https://apic-lab-mgmt-api-manager-apic.apps.itz-jyz46m.infra01-lb.wdc07.techzone.ibm.com"
+}
+
+variable "apic_username" {
+  description = "APIC admin username"
   type        = string
   sensitive   = true
 }
 
-variable "k8s_ca_cert" {
-  description = "Kubernetes cluster CA certificate (base64)"
+variable "apic_password" {
+  description = "APIC admin password"
   type        = string
   sensitive   = true
 }
 
 variable "gateway_name" {
-  description = "Name of the gateway"
+  description = "Name of the gateway/API"
   type        = string
   default     = "test-gateway"
 }
 
 variable "namespace" {
-  description = "Student namespace in OpenShift"
+  description = "Student namespace"
   type        = string
   default     = "student-00"
 }
 
 variable "environment" {
-  description = "Target environment: dev, staging or production"
+  description = "Target environment"
   type        = string
   default     = "dev"
 }
 
 variable "replicas" {
-  description = "Number of gateway replicas"
+  description = "Number of replicas"
   type        = number
   default     = 1
 }
