@@ -13,7 +13,7 @@ locals {
 
 resource "null_resource" "apic_catalog" {
   triggers = {
-    catalog_name = local.catalog_name
+    always_run = timestamp()
   }
 
   provisioner "local-exec" {
