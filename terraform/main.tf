@@ -1,54 +1,68 @@
 terraform {
   required_providers {
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = "~> 2.25"
+    null = {
+      source  = "hashicorp/null"
+      version = "~> 3.0"
     }
   }
 }
 
-provider "kubernetes" {
-  host                   = var.k8s_host
-  token                  = var.k8s_token
-  cluster_ca_certificate = base64decode(var.k8s_ca_cert)
-}
-
-resource "kubernetes_manifest" "gateway" {
-  manifest = {
-    apiVersion = "datapower.ibm.com/v1beta3"
-    kind       = "DataPowerService"
-    metadata = {
-      name      = var.gateway_name
-      namespace = var.namespace
-      labels = {
-        app         = var.gateway_name
-        environment = var.environment
-        owner       = var.namespace
-      }
-    }
-    spec = {
-      replicas = var.replicas
-      version  = "10.5.0.10"
-      license = {
-        accept  = true
-        use     = "nonproduction"
-        license = "L-RJON-CCAT5F"
-      }
-      users = [
-        {
-          name           = "admin"
-          accessLevel    = "privileged"
-          passwordSecret = "datapower-admin-credentials"
-        }
-      ]
-    }
+resource "null_resource" "apic_api" {
+  triggers = {
+    gateway_name = var.gateway_name
+    namespace    = var.namespace
+    environment  = var.environment
+    replicas     = var.replicas
   }
-}
 
-output "gateway_name" {
-  value = var.gateway_name
-}
+  provisioner "local-exec" {
+    command = <<EOT
+      TOKEN=$(curl -sk -X POST \
+        "${var.apic_platform_endpoint}/api/token" \
+        -H "Content-Type: application/json" \
+        -d "{
+          \"username\": \"${var.apic_username}\",
+          \"password\": \"${var.apic_password}\",
+          \"realm\": \"admin/default-idp-1\",
+          \"client_id\": \"caa87d9a-8cd7-4686-8b6e-ee2cdc5ee267\",
+          \"client_secret\": \"3ecff363-7eb3-44be-9e07-6d4386c48b0b\",
+          \"grant_type\": \"password\"
+        }" | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 
-output "gateway_namespace" {
-  value = var.namespace
+      curl -sk -X POST \
+        "${var.apic_manager_endpoint}/api/orgs/lab-organization/drafts/draft-apis" \
+        -H "Authorization: Bearer $TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "{
+          \"draft_api\": {
+            \"info\": {
+              \"title\": \"${var.namespace}-${var.gateway_name}\",
+              \"name\": \"${var.namespace}-${var.gateway_name}\",
+              \"version\": \"1.0.0\",
+              \"x-ibm-name\": \"${var.namespace}-${var.gateway_name}\"
+            },
+            \"openapi\": \"3.0.0\",
+            \"paths\": {},
+            \"x-ibm-configuration\": {
+              \"gateway\": \"datapower-api-gateway\",
+              \"type\": \"rest\",
+              \"phase\": \"realized\",
+              \"enforced\": true,
+              \"cors\": {\"enabled\": true},
+              \"assembly\": {
+                \"execute\": [{
+                  \"invoke\": {
+                    \"title\": \"invoke\",
+                    \"version\": \"2.0.0\",
+                    \"target-url\": \"https://httpbin.org/get\",
+                    \"timeout\": 60,
+                    \"verb\": \"keep\"
+                  }
+                }]
+              }
+            }
+          }
+        }"
+    EOT
+  }
 }
