@@ -20,7 +20,7 @@ variable "apic_password" {
   description = "APIC labadmin password"
   type        = string
   sensitive   = true
-  default     = "LabAdmin2026!"
+  default     = "LabAdmin2026"
 }
 
 variable "apic_org_name" {
