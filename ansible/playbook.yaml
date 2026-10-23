@@ -105,7 +105,7 @@
 
     - name: Get catalog ID
       uri:
-        url: "{{ apic_platform_endpoint }}/api/orgs/{{ apic_org_name }}/catalogs/{{ catalog_name }}"
+        url: "{{ apic_platform_endpoint }}/api/orgs/{{ apic_org_id }}/catalogs/{{ catalog_name }}"
         method: GET
         validate_certs: false
         headers:
