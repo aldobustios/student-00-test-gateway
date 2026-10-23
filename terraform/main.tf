@@ -30,18 +30,17 @@ resource "kubernetes_manifest" "gateway" {
       replicas = var.replicas
       version  = "10.5.0.10"
       license = {
-        accept     = true
-        use        = "nonproduction"
-        license    = "L-ACRR-ZTMKXU"
+        accept  = true
+        use     = "nonproduction"
+        license = "L-ACRR-ZTMKXU"
       }
-      users = [{
-        name              = "admin"
-        accessLevel       = "privileged"
-        passwordSecret    = "datapower-admin-credentials"
-      }]
-      gateway = {
-        enabled = true
-      }
+      users = [
+        {
+          name           = "admin"
+          accessLevel    = "privileged"
+          passwordSecret = "datapower-admin-credentials"
+        }
+      ]
     }
   }
 }
