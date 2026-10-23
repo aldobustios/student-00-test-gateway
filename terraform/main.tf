@@ -12,10 +12,10 @@ provider "ibm" {
 }
 
 resource "ibm_apic_gateway" "nano" {
-  name        = "${{ values.gateway_name }}"
-  namespace   = "${{ values.namespace }}"
-  environment = "${{ values.environment }}"
-  replicas    = ${{ values.replicas }}
+  name        = "test-gateway"
+  namespace   = "student-00"
+  environment = "dev"
+  replicas    = 1
 
   gateway_type = "datapower-api-gateway"
 
