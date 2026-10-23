@@ -1,0 +1,58 @@
+---
+- name: Configure DataPower Nano Gateway
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    apic_endpoint: "https://apic-lab-mgmt-platform-api-apic.apps.itz-jyz46m.infra01-lb.wdc07.techzone.ibm.com"
+    gateway_name: "${{ values.gateway_name }}"
+    namespace: "${{ values.namespace }}"
+    environment: "${{ values.environment }}"
+
+  tasks:
+    - name: Wait for gateway to be ready
+      uri:
+        url: "{{ apic_endpoint }}/api/gateways/{{ gateway_name }}"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ lookup('env', 'APIC_TOKEN') }}"
+        status_code: 200
+      register: gateway_status
+      retries: 10
+      delay: 30
+      until: gateway_status.status == 200
+
+    - name: Apply rate limiting policy
+      uri:
+        url: "{{ apic_endpoint }}/api/gateways/{{ gateway_name }}/policies"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ lookup('env', 'APIC_TOKEN') }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          name: rate-limit
+          type: rate-limit
+          config:
+            rate: 100
+            interval: 60
+            unit: requests
+        status_code: 201
+
+    - name: Apply TLS configuration
+      uri:
+        url: "{{ apic_endpoint }}/api/gateways/{{ gateway_name }}/tls"
+        method: PUT
+        headers:
+          Authorization: "Bearer {{ lookup('env', 'APIC_TOKEN') }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          enabled: true
+          profile: "{{ environment }}-tls-profile"
+        status_code: 200
+
+    - name: Print gateway info
+      debug:
+        msg: "Gateway {{ gateway_name }} configured successfully in {{ environment }}"
