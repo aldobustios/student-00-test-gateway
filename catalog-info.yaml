@@ -1,0 +1,26 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${{ values.namespace }}-${{ values.gateway_name }}
+  title: ${{ values.gateway_name }} (${{ values.namespace }})
+  description: DataPower Nano Gateway provisioned via Terraform and Ansible
+  annotations:
+    github.com/project-slug: aldobustios/${{ values.namespace }}-${{ values.gateway_name }}
+    backstage.io/techdocs-ref: dir:.
+    argocd/app-name: ${{ values.namespace }}-gateway
+  tags:
+    - gateway
+    - apic
+    - ${{ values.environment }}
+  links:
+    - url: https://apic-lab-mgmt-api-manager-apic.apps.itz-jyz46m.infra01-lb.wdc07.techzone.ibm.com
+      title: API Connect Manager
+      icon: dashboard
+    - url: https://openshift-gitops-server-openshift-gitops.apps.itz-jyz46m.infra01-lb.wdc07.techzone.ibm.com
+      title: ArgoCD
+      icon: dashboard
+spec:
+  type: gateway
+  lifecycle: ${{ values.environment }}
+  owner: ${{ values.namespace }}
+  system: apic-lab
