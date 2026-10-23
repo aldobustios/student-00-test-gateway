@@ -20,7 +20,7 @@ resource "null_resource" "apic_catalog" {
     command = <<EOT
 set -e
 
-TOKEN=$(curl -sk -X POST \
+TOKEN_RESPONSE=$(curl -sk -X POST \
   "${var.apic_platform_endpoint}/api/token" \
   -H "Content-Type: application/json" \
   -d "{
@@ -30,7 +30,11 @@ TOKEN=$(curl -sk -X POST \
     \"client_id\": \"caa87d9a-8cd7-4686-8b6e-ee2cdc5ee267\",
     \"client_secret\": \"3ecff363-7eb3-44be-9e07-6d4386c48b0b\",
     \"grant_type\": \"password\"
-  }" | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+  }")
+
+echo "TOKEN RESPONSE: $TOKEN_RESPONSE"
+
+TOKEN=$(echo $TOKEN_RESPONSE | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 
 RESULT=$(curl -sk -X POST \
   "${var.apic_platform_endpoint}/api/orgs/${var.apic_org_name}/catalogs" \
